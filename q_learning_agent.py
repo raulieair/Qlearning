@@ -74,6 +74,12 @@ if __name__ == "__main__":
     env = Env(NOISE_LEVEL)
     agent = QLearningAgent(actions=list(range(env.n_actions)))
 
+
+    # Variables útiles para la modificación 1A
+    threshold = 1e-4
+    streak = 3
+    required_streak = 10
+
     for episode in range(NUM_EPISODIOS):
         state = env.reset(MOSTRAR_PROCESO)  
         
@@ -111,16 +117,24 @@ if __name__ == "__main__":
             time.sleep(0.5)
                 
         ### INICIO DE MODIFICACION 1A ###
-        if not converged:
-        
-             ### AQUÍ SE DEBE INTEGRAR LA LÓGICA QUE COMPRUEBE QUE SE HAN CONVERGIDO ##
-             
-             if converged:
-                 print(f"El algoritmo ha convergido tras {episode} episodios")
-                 converged = True
-             converged = False
-        ### FINAL DE MODIFICACION 1A ###                
-      
+        max_delta = 0.0
+        for state_key, old_q_vals in prev_q_table.items():
+            new_q_vals = agent.q_table[state_key]
+            deltas = [abs(n - o) for o, n in zip(old_q_vals, new_q_vals)]
+            max_delta = max(max_delta, max(deltas))
+
+        if max_delta < threshold:
+            streak += 1
+        else:
+            streak = 0
+
+        if streak >= required_streak:
+            print(f"Convergencia detectada (Δmax={max_delta:.2e}) tras {episode+1} episodios")
+            converged = True
+
+        if converged:
+            break
+    ### FINAL DE MODIFICACION 1A ###
     env.print_policy_all(agent)
     guess = input("Pulsa cualquier tecla para salir...")
     exit(0)
